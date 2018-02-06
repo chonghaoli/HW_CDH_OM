@@ -1,0 +1,17 @@
+[root@cscloud-rs-hadoop002 tmp]# cd ..
+[root@cscloud-rs-hadoop002 /]# du -a | sort -n -r | head -n 10
+du: cannot access ¡®./proc/33745/task/33745/fd/4¡¯: No such file or directory
+du: cannot access ¡®./proc/33745/task/33745/fdinfo/4¡¯: No such file or directory
+du: cannot access ¡®./proc/33745/fd/4¡¯: No such file or directory
+du: cannot access ¡®./proc/33745/fdinfo/4¡¯: No such file or directory
+9881520920      .
+9830797116      ./data01
+8007469944      ./data01/dfs
+8002068452      ./data01/dfs/dn
+8002068448      ./data01/dfs/dn/current
+8002068444      ./data01/dfs/dn/current/BP-2059333383-172.17.16.12-1500952491735
+8002068440      ./data01/dfs/dn/current/BP-2059333383-172.17.16.12-1500952491735/current
+8002068432      ./data01/dfs/dn/current/BP-2059333383-172.17.16.12-1500952491735/current/finalized
+785102272       ./data01/z00379280
+661979824       ./data01/z00379280/gdaldata
+[root@cscloud-rs-hadoop002 /]#
