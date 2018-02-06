@@ -1,0 +1,40 @@
+工作联系人：
+林少奎
+linshaokui1@huawei.com
+
+吴铭冬
+wumingdong1@huawei.com
++86-13560175787
+
+吴铭冬,cloudera 平台管理员，属于软件部分管理员。
+其他相关人员：cloudera 硬件管理员。
+资料地址：\\10.40.44.64\外部资料
+一 基本信息
+1 邮件地址:
+email.huawei.com
+2 工作账户：
+zWX543128 / zeng@9771901584
+修改地址密码:w3.huawei.com
+3 cloudera 链接：
+30节点小集群：
+172.17.16.134:7180 admin/admin
+250节点大集群：
+172.17.16.11:7180  admin/fzybtsxqfg
+4 后台节点登录方式：
+
+5 集群任务描述：
+大集群：
+为计算平台，主要的计算场景为：从生产平台加载数据到大平台，进行相关的计算后将结果传回上产平台。计算任务主要有两种类型，ImpalaSQL相关计算与机器学习相关的Spark任务。
+Impala 任务有两种，用于简单的数据查询如简单的 insert into   from  select ；以及通过sql完成相关统计计算的任务。
+Spark任务用于在线的训练任务，要求任务的时间极端，在秒级。
+
+二 集群描述
+1 软件版本
+Cloudera版本：CDH 5.9.2, Parcel（NO HA）
+2 节点数目：
+数据节点：239个
+物理内存: 256G
+Disk : 19.3T
+HDFS 使用率：1.9 PB (38.88%)
+Impala 没有load balance，但是提交任务会轮询。
+
