@@ -1,0 +1,23 @@
+给集群添加HA
+https://www.cloudera.com/documentation/enterprise/5-9-x/topics/cdh_hag_hdfs_ha_enabling.html
+
+进入HDFS，Actions > Enable High Availability
+输入name space名字
+选择stand by namenode host
+选择三个JournalNode host
+为几个新选择的node选择directory。最好是被创建的文件夹，因为文件夹的用户权限、owner有要求。
+最好选择清除以前的ZooKeeper, standby NameNode, and JournalNodes信息，如果不清除，以前的namenode、JournalNode也会继续存在。
+continue后自动开始配置，若原namenode path_to_dfs/dfs/nn内存在文件，可能会报如下错误：
+ERROR	org.apache.hadoop.hdfs.server.namenode.NameNode	
+RECEIVED SIGNAL 15: SIGTERM
+一般来说忽略就行，可能是zookeeper未启动导致的错误，启动后问题就消失了。
+
+最后安装完成后，可能会提醒更新hive
+The following manual steps must be performed after completing this wizard:
+For each of the Hive service(s) Hive, stop the Hive service, back up the Hive Metastore Database to a persistent store, run the service command "Update Hive Metastore NameNodes", then restart the Hive services.
+
+进入hive， action -> stop all services, 备份metadata（optional），直接 action -> update Hive Metastore NameNode即可。然后重启imapala或在命令行输入invalidate metadata。
+
+若想备份hive metadata。。。。似乎需要企业版本。。未尝试。
+
+HA enabled
