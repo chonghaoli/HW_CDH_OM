@@ -1,0 +1,15 @@
+#ntp problem
+#Error in CM:
+Clock Offset
+The host's NTP service could not be located or did not respond to a request for the clock offset.
+
+#try:
+ntpq -p
+#result:
+ntpq: read: Connection refused
+
+
+#solution
+#modify the /etc/ntp.conf to:
+server 127.127.1.0
+fudge 127.127.1.0 stratum 10

@@ -1,0 +1,36 @@
+for i in `ll | grep impala | cut -d " " -f 9`; do rm -f $i; done
+
+for i in `ll | grep 25 | cut -d " " -f 9`; do rm -f $i; done
+
+for i in {1..10}
+do
+sudo -u impala pstack 17396 > impalad_$(date +"%Y_%m_%d_%I_%M_%S_%p").pstack 2>&1
+sleep 3
+done 
+
+##################
+#using expect to do scp without manully input pass
+#!/usr/bin/expect  
+set timeout 10  
+set host [lindex $argv 0]  
+set username [lindex $argv 1]  
+set password [lindex $argv 2]  
+set src_file [lindex $argv 3]  
+set dest_file [lindex $argv 4]  
+spawn scp $src_file $username@$host:$dest_file  
+ expect {  
+ "(yes/no)?"  
+  {  
+    send "yes\n"  
+    expect "*assword:" { send "$password\n"}  
+  }  
+ "*assword:"  
+  {  
+    send "$password\n"  
+  }  
+}  
+expect "100%"
+expect eof
+####################################
+expample :
+for i in {96..110}; do ./expect_scp.sh 10.128.224.$i root 2017whzSZ! /etc/hosts /etc/hosts; done
