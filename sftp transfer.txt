@@ -1,0 +1,22 @@
+10.74.105.127
+ftp:2122
+sftp:2222
+cscloud/2016banDG!
+目录/cscloud/工号文件夹
+传输文件:scp -P 2222 xxx.7z.* cscloud@10.74.105.127:/cscloud/
+拉取文件scp -P 2222 cscloud@10.74.105.127:/cscloud/xxx.7z.* ./
+
+登录sftp
+sftp -P 2222 cscloud@10.74.105.127
+2016banDG!
+
+在cscloud下创建/lwx543150
+mkdir /cscloud/lwx543150
+
+上传文件
+put /target/files/ /cscloud/lwx543150/
+
+在另一台机器上，登录sftp，并下载文件
+get /cscloud/lwx543150/target /target/files
+
+ntp
