@@ -1,0 +1,27 @@
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA256
+
+{
+  "features" : [ ],
+  "name" : "AAS_CLD-201801-181302",
+  "uuid" : "bfa558f8-03ed-4bb7-ae49-ebddb3f6460d",
+  "version" : 1,
+  "expirationDate" : "2019-02-04"
+}
+-----BEGIN PGP SIGNATURE-----
+Version: BCPG v1.46
+
+iQIcBAEBCAAGBQJad+nnAAoJECXwRXLmH8tlcKsP/i4It4erqBJHTbaat7pp+fNi
+X1Ms+IO769GFBv3Ltb5b0iwKuEsjGRowl/JGORLAysPzUFrN2H3CJ52Hq+WsdrWl
+kAvK4jSA6HdrCALTkLumtsSqcDRuCo1pZIuN/yMqkU7n57IkW/vDzLIXjnhG0VqJ
+8jS0/qa3fHRwNogKOFflR/jQLLVpiuy7ctaC3G2x259/E2jqsE8DuENxngP2v9Vt
+v4DDWxvJEpWPVV9/wsxW975MAyRakNwDtA+bE4wP8SaGvb7Gt0vfo1B4W+g/tRur
+U5xuu23DkwDiRRguKUDu/0adY1I30joLAr8T72HxYQUh3w6eJKoJZd/1i+evHgMK
+wBCPnxBSPqSHPBOXdB4YxbxBQfSZaZM1oGx3TLjKp0arEjsbBBNc89LeughcTgx+
+VVvbC06bRfesO+V6uCQjbPcVtrMJJ5nGzPl7nmqfF896ha3aeC53v63TayJBcjJR
+OTXL92Ihm7ReyTrGJ45Yt01L7Ga0xGYSMxLo48qhPxPJoy9V8L9hhMhDrIRlLVSD
+GpRdbDKwRxQ9BpjjB4cGOJBYTdcEGqqVav+lZW881nLFIyADnDZNNndlNeBf/o+G
+1UpNfRguAZQi4/rbnyVXN/PUuNc1jTDFHeVkZRmJQ1i8ZQS5djPlETPAXLxZdkoV
++7h98/bWgl8eQLOx+MrA
+=GWJP
+-----END PGP SIGNATURE-----
