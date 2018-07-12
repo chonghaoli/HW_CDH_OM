@@ -1,0 +1,28 @@
+//scala language
+import org.apache.spark.sql.SQLContext
+val sql = new SQLContext(sc) //clain a SQLContext object
+val peopleInfo=sql.read.json("/tmp/test_file.txt")
+
+peopleInfo.schema
+
+val pi = sql.sql("""
+|select
+| id,
+| name,
+| age
+|from peopleInfo
+""".stripMargin)
+
+-----------------------------------------------
+hdfs dfs -put spark_sql_test.csv /tmp/
+
+//start a spark session
+spark-shell --master yarn --deploy-mode client
+//create table
+sqlContext.sql("create table spark_sql_test (id int, name string, age int) row format delimited fields terminated by ',' stored as TextFile")
+
+sqlContext.sql("load data inpath '/tmp/spark_sql_test.csv' overwrite into table spark_sql_test")
+
+val test_01=sqlContext.sql("select * from spark_sql_test")
+
+test_01.filter(test_01("age")>20).show()
