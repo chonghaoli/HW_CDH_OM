@@ -1,0 +1,45 @@
+Hadoop Snapshot
+
+原理简述
+建立文件系统的索引，每次更新文件不会真正的改变文件，而是新开辟一个空间用来保存更改的文件，快照文件创建时，自身约占1GB空间。快照文件只读。
+
+为预定目录创建快照
+Shell命令：hdfs dfsadmin -allowSnapshot <path>  #path  该目录被允许拍快照
+Example:
+hdfs dfsadmin -allowSnapshow /tmp/carl
+
+创建快照
+Shell命令：hdfs dfs -createSnapshot <path> [<snapshotName>] 
+#快照名可不填，使用系统默认名
+操作完成后，在该目录下生成一个隐藏文件：./snapshot目录，
+Example:
+hdfs dfs -createSnapshot /tmp/carl
+可进入快照查看被拍下的“/tmp/carl”内的文件：
+Shell命令：hdfs dfs -ls /tmp/carl/.snapshot/s20180516-180022.341
+
+列出所有HDFS中的快照
+hdfs –lsSnapshottableDir
+
+恢复文件
+仅需要将快照内文件复制出来即可：
+Example:
+#将 tpcds-kit文件夹删除后将其从快照重新复制出来
+hdfs dfs -cp /tmp/carl/.snapshot/s20180516-180022.341/tpcds-kit/ /tmp/carl/
+
+比较快照文件
+Shell命令：hdfs snapshotDiff <path> <fromSnapshot> <toSnapshot> #相同目录下的两个快照
+Example：
+ 
+#/tpcds-kit文件被删除
+
+删除快照文件
+hdfs dfs -deleteSnapshot <path> <snapshotName>
+example：
+hdfs dfs -deleteSnapshot /tmp/carl s20180516-175723.275
+#注意，path是 /tmp/carl 而不是 /tmp/carl/.snapshot
+
+禁止快照
+禁止快照目录创建。在静止快照之前目录中的所有快照必须删除。
+Shell命令：hdfs dfsadmin -disallowSnapshot <path>
+Example：
+hdfs dfsadmin -disallowSnapshot /tmp/carl
