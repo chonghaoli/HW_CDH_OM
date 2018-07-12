@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 Spyder Editor
-Transfer Impala lineage log to gremlin xml.
+Transfer Impala lineage log to csv files for neo4j
 """
 
 import json, os
@@ -28,33 +28,6 @@ def read_single_file(path):
     #one dict means one query or one lineage info
     return dict_list
   
-    
-'''
-def get_tables_schema_and_columns(dict_list):
-    table_list={}
-    column_list=[]
-    for d in dict_list:
-        for v in d['vertices']:
-            db_tb_col=v['vertexId'].split('.')
-            db_tb=db_tb_col[0]+"."+db_tb_col[1]
-            col=db_tb_col[2]
-            #collect columbs
-            column_list.append(db_tb_col)
-            #collect table and columns for it
-            if db_tb in table_list.keys():
-                table_list[db_tb].append(col)
-            else:
-                table_list[db_tb]=[col]
-    
-    #remove redundant columbs
-    column_list=list(set(column_list))
-    
-    #remove redundant columns in a table
-    for t in table_list.keys():
-        table_list[t]=list(set(table_list[t]))
-    
-    return table_list,column_list
-'''
 
 def get_table_column_name(ids):
     db_tb_col=ids.split('.')
@@ -83,13 +56,28 @@ for i in range(0,len(list)):
 print('reading finished\n')
 print('Total read '+str(len(dict_list))+' records.\nProcessing begin!')
 
-queries='graph = TinkerGraph.open()\n'
-queries+='g = graph.traversal()\n'
-queries+=':record start impala-lineage-log.txt\n'
+#csv file schema
+column_node='column_id,column_name,table_belong'
+table_node='table_id,table_name'
+edge_col_col='edge_id,source,target'
+edge_tab_col='edge_id,source,target'
+edge_tab_tab='edge_id,source,target'
 
 table_column_list={} #{table_name:[column1,column2, ,,,]}
 column_lineage_list={} #{column:[column1, column2, ,,,]}
 table_lineage_list={} #{table_name:[table1, table2, ,,,]}
+
+id=1
+
+dict_id={} #for recorde the relationship between id and name
+
+#open files
+f_column=open('D:\\working\\impala_lineage\\neo4j_column_node.csv','w')
+f_table=open('D:\\working\\impala_lineage\\neo4j_table_node.csv','w')
+f_edge_cc=open('D:\\working\\impala_lineage\\neo4j_column_column_edge.csv','w')
+f_edge_tc=open('D:\\working\\impala_lineage\\neo4j_table_column_edge.csv','w')
+f_edge_tt=open('D:\\working\\impala_lineage\\neo4j_table_table_edge.csv','w')
+
 
 for d in dict_list:
     #create verteies for columns
@@ -106,19 +94,31 @@ for d in dict_list:
         #column
         col=db_tb_col[1]
                 
-        #collect table and columns info and their vertiex
+        #collect table and columns info and create node for them
         if db_tb in table_column_list.keys():
             if col not in table_column_list[db_tb]:
                 table_column_list[db_tb].append(col)
-                queries+='g.addV("'+v['vertexType']+'").property(id,"'+v['vertexId']+'").property("column_name","'+col+\
-                '").property("table_belong","'+db_tb+'").next()\n'
+                column_node+='\n'+str(id)+','+col+','+db_tb
+                dict_id[v['vertexId']]=id
+                id+=1
+
         else:
             table_column_list[db_tb]=[col]
-            #column vertiex
-            queries+='g.addV("'+v['vertexType']+'").property(id,"'+v['vertexId']+'").property("column_name","'+col+\
-            '").property("table_belong","'+db_tb+'").next()\n'
-            #table vertiex
-            queries+='g.addV("table").property(id,"'+db_tb+'").property("table_name","'+db_tb+'").next()\n'
+            #column node
+            column_node+='\n'+str(id)+','+col+','+db_tb
+            dict_id[v['vertexId']]=id
+            id+=1
+            
+            #table node
+            table_node+='\n'+str(id)+','+db_tb
+            dict_id[db_tb]=id
+            id+=1
+    
+    #write down nodes and clear memory
+    f_column.write(column_node)
+    f_table.write(table_node)
+    column_node=''
+    table_node=''
     
     #create edge for column lineages
     for e in d['edges']:
@@ -156,10 +156,9 @@ for d in dict_list:
                     #create child column lineage
                     column_lineage_list[d['vertices'][source]['vertexId']].append(d['vertices'][target]['vertexId'])
                     
-                    #set query
-                    queries+='g.addE("column_parent").from(g.V("'+d['vertices'][source]['vertexId']+'")).to(g.V("'+\
-                    d['vertices'][target]['vertexId']+'")).property(id,"'+d['vertices'][source]['vertexId']+'_to_'+\
-                    d['vertices'][target]['vertexId']+'").next()\n'
+                    #write relationship between columns
+                    edge_col_col+='\n'+str(id)+','+str(dict_id[d['vertices'][source]['vertexId']])+','+str(dict_id[d['vertices'][target]['vertexId']])
+                    id+=1
             
             else:
                 #old parent column found
@@ -179,24 +178,32 @@ for d in dict_list:
                     if d['vertices'][target]['vertexId'] not in column_lineage_list[d['vertices'][source]['vertexId']]:
                         column_lineage_list[d['vertices'][source]['vertexId']].append(d['vertices'][target]['vertexId'])
                         
-                        #set query
-                        queries+='g.addE("column_parent").from(g.V("'+d['vertices'][source]['vertexId']+'")).to(g.V("'+\
-                        d['vertices'][target]['vertexId']+'")).property(id,"'+d['vertices'][source]['vertexId']+'_to_'+\
-                        d['vertices'][target]['vertexId']+'").next()\n'
+                        #write relationship between columns
+                        edge_col_col+='\n'+str(id)+','+str(dict_id[d['vertices'][source]['vertexId']])+','+str(dict_id[d['vertices'][target]['vertexId']])
+                        id+=1
+    
+    #write down edge and clear memory
+    f_edge_cc.write(edge_col_col)
+    edge_col_col=''
                 
-                
-
+#add relationship between tables
 for tf in table_lineage_list.keys():
     for tt in table_lineage_list[tf]:
-        queries+='g.addE("table_parent").from(g.V("'+tf+'")).to(g.V("'+tt+'")).property(id,"'+tf+'_to_'+tt+'").property("name","'+tf+'_to_'+tt+'").next()\n'
-        
+        edge_tab_tab+='\n'+str(id)+','+str(dict_id[tf])+','+str(dict_id[tt])
+        id+=1
+f_edge_tt.write(edge_tab_tab)
+
+
+#add relationship between colum
 for tf in table_column_list.keys():
     for colt in table_column_list[tf]:
-        queries+='g.addE("column_of_table").from(g.V("'+tf+'")).to(g.V("'+tf+'.'+colt+'")).property(id,"'+tf+'_to_'+colt+'").property("name","'+tf+'_to_'+colt+'").next()\n'
-        
-queries+=':record stop\n'
-queries+=':remote connect tinkerpop.gephi\n'
-queries+=':> graph\n'
-f=open('D:\\working\\impala_lineage\\queries.txt','w')
-f.write(queries)
-f.close()
+        edge_tab_col+='\n'+str(id)+','+str(dict_id[tf])+','+str(dict_id[tf+'.'+colt])
+        id+=1
+f_edge_tc.write(edge_tab_col)
+       
+
+f_column.close()
+f_table.close()
+f_edge_cc.close()
+f_edge_tc.close()
+f_edge_tt.close()
