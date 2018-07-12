@@ -1,0 +1,71 @@
+neo4j
+
+1	start neo4j
+change config file
+$cd /path/to/neo4j/conf
+$vim neo4j.conf
+set:
+# To accept non-local connections, uncomment this line:
+dbms.connectors.default_listen_address=0.0.0.0
+
+$cd /path/to/neo4j/bin/
+$./neo4j start
+
+2	visit html UI page
+<host>:7474
+
+3	start neo4j-shell
+./neo4j-shell -path .data/databases/<your database>
+
+4	change default database
+edit /neo4j_home/conf/neo4j.conf
+change:
+dbms.active_database=<new databases>
+notice that: <new database> is the new folder name undera ./data/databases/
+
+5	import graphml file
+download: http://dist.neo4j.org/jexp/shell/neo4j-shell-tools_3.0.1.zip
+unzip downloaded file and put all jar file to lib
+start neo4j-shell
+put graphxm file to NEO4J_HOME
+create new folder:./data/databases/<new_database>
+$./bin/neo4j-shell -path ./data/databases/<new_database> -config ./conf/
+$ import-graphml -i <test.xml>
+[[[[[Failed because there is not label]]]]]]
+
+6	Create csv file for impala-lineage file
+use json_reading_processing_v3.py
+put five file to html server
+
+open neo4j webpage: 
+http://172.17.16.94:7474/browser/
+
+loading data
+$load csv with headers from "http://172.17.16.94/lwx543150/impala_csv/neo4j_column_column_edge.csv" as row create (n:col_col_edge) set n=row
+load csv with headers from "http://172.17.16.94/lwx543150/impala_csv/neo4j_column_node.csv" as row create (n:col_node) set n=row
+load csv with headers from "http://172.17.16.94/lwx543150/impala_csv/neo4j_table_column_edge.csv" as row create (n:tab_col_edge) set n=row
+load csv with headers from "http://172.17.16.94/lwx543150/impala_csv/neo4j_table_node.csv" as row create (n:tab_node) set n=row
+load csv with headers from "http://172.17.16.94/lwx543150/impala_csv/neo4j_table_table_edge.csv" as row create (n:tab_tab_edge) set n=row
+
+create index
+create index on :col_node(column_id)
+create index on :tab_node(table_id)
+create index on :col_col_edge(edge_id)
+create index on :tab_col_edge(edge_id)
+create index on :tab_tab_edge(edge_id)
+
+create relationships
+match (e:col_col_edge),(c_one:col_node),(c_two:col_node)
+where c_one.column_id=e.source and c_two.column_id=e.target
+create unique (c_one)-[:PARENT_TO]->(c_two)
+
+match (e:tab_col_edge),(t:tab_node),(c:col_node)
+where t.table_id=e.source and c.column_id=e.target
+create unique (c)-[:BELONG_TO]->(t)
+
+match (e:tab_tab_edge),(t_one:tab_node),(t_two:tab_node)
+where t_one.table_id=e.source and t_two.table_id=e.target
+create unique (t_one)-[:PARENT_TO]->(t_two)
+
+test
+match (c2:col_node)-[BELONG_TO]->(t2:tab_node)-[PARENT_TO]->(t:tab_node)<-[]-(c:col_node)<-[]-(c2:col_node) return t,t2,c,c2 limit 9
