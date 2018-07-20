@@ -1,0 +1,82 @@
+HDP 2.6.2 installation
+
+check:
+hostname 
+hostname –f 
+
+install:
+ntpd 
+
+install 
+mariadb
+mariadb-java-connector
+
+mysql create use ambari
+CREATE USER 'ambari'@'localhost' IDENTIFIED BY 'huawei';
+GRANT ALL PRIVILEGES ON *.* TO 'ambari'@'localhost';
+CREATE USER 'ambari'@'%' IDENTIFIED BY 'huawei';
+GRANT ALL PRIVILEGES ON *.* TO 'ambari'@'%';
+CREATE USER 'ambari'@<hostname -f>' IDENTIFIED BY 'huawei';
+GRANT ALL PRIVILEGES ON *.* TO 'ambari'@’<hostname -f>’;
+FLUSH PRIVILEGES;
+
+Because we using existing Mariadb, following is instruction:
+https://docs.hortonworks.com/HDPDocuments/Ambari-2.6.2.0/bk_ambari-administration/content/using_ambari_with_mysql.html
+
+cd /var/lib/ambari-server/resources/
+mysql -u <AMBARIUSER> -p
+CREATE DATABASE <AMBARIDATABASE>;
+USE <AMBARIDATABASE>;
+SOURCE Ambari-DDL-MySQL-CREATE.sql;
+create database oozie;
+create user 'oozie'@'localhost' identified by 'oozie';
+grant all privileges on oozie.* to 'oozie'@'localhost';
+create user 'oozie'@'%' identified by 'oozie';
+grant all privileges on oozie.* to 'oozie'@'%';
+flush privileges;
+
+create database hive;
+create user 'hive'@'localhost' identified by 'hive';
+create user 'hive'@'%' identified by 'hive';
+grant all privileges on hive.* to 'hive'@'localhost';
+grant all privileges on hive.* to 'hive'@'%';
+flush privileges;
+
+prepare HDP repository
+like following:
+[ambari-2.6.2.0]
+name=ambari Version - ambari-2.6.2.0
+baseurl=http://172.17.17.21/Ambari-2.6.2.0/centos7/2.6.2.0-155
+gpgcheck=1
+gpgkey=http://172.17.17.21//Ambari-2.6.2.0/centos7/2.6.2.0-155/RPM-GPG-KEY/RPM-GPG-KEY-Jenkins
+enabled=1
+
+
+make sure following exist:
+/usr/share/java/mysql-connector-java.jar
+
+close iptables, close Selinux, close firewalld
+
+then:
+yum install ambari-server
+ambari-server setup
+check detail in url:
+当问到：Customize user account for ambari-server
+选择 n，默认使用root
+使用已经装好的JDK，输入java home
+不知道LZO是啥，跳过没装
+使用mariadb，选择3
+使用事先准备好的用户名和数据库，注意这里不能用root
+注意要特别设置mysql-connector-java
+ambari-server setup --jdbc-db=mysql --jdbc-driver=/usr/share/java/mysql-connector-java.jar
+
+启动ambari
+ambari-server start
+登录ambari
+http://<your.ambari.server>:8080
+
+接下来就一步步来啦，之后安装好后，报了很多错，还不知道怎么弄，下周来检查啦~
+
+
+
+
