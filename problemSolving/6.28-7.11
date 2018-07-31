@@ -1,0 +1,47 @@
+ps -ef | grep java | gre namenode
+查看关于java某些进程信息，比如log，配置等
+
+netstat -apnlt | grep <port>
+
+
+20180703
+在Cloudera上安装Kafka
+由于Cloudera自身不带Kafka parcel，需要去Cloudera官网下载，地址如下：
+http://archive.cloudera.com/kafka/parcels/
+选择需要的版本后，放入html服务器，将Kafka地址添加到Remote Parcel Repository URLs
+然后点击hosts->parcels/
+这时Kafka应该在parcel name这一列显示出来了，点击Kafka这一行最右，download , ditribute, activate。
+
+这时可以开始正式安装Kafka了。
+在CM主页，点击cluster name边上的下拉菜单，点击add service，选择Kafka安装。
+选择broker和mirror mikers的host，continue
+中途要求填写Source Brokers List和Destination Brokers List
+分别填入需要的<full_hostname:9092>，然后点击continue，（之后必然会失败。。。）
+打开新的CM页面，这时Kafka服务应该已经出现了。点击进入，点击configuration：
+保证java heap size大于250MB
+由于安装mirror miker需要填写白名单，现在白名单为空所以会报错安装失败
+向whitelist中填入(?!x)x   （这是个正则表达式，使白名单匹配不到任何东西）
+回到安装页面retry。。。。。。success！！！
+
+201180704
+
+impala drop table error， 
+expect hosts instead of an IP.
+
+solution:
+go to hive meteadata server, in this case is mariadb。
+
+go to hive database, DBS and SDS table
+try query like :
+select name, LOCATION from DBS where LOCATION like '%<IP>%' limit 30;
+select name, LOCATION from SDS where LOCATION like '%<IP>%' limit 30;
+if some records showed。 
+try following query:
+update DBS set LOCATION=replace(LOCATION, '<IP>', 'hostname');
+update SDS set LOCATION=replace(LOCATION, '<IP>', 'hostname');
+
+host clock offset error
+
+很可能是ntp server没启动，或没配置好。
+都调整好后，重启cloudera-scm-agent
+
