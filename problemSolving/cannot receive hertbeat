@@ -1,0 +1,64 @@
+#20180614(impala shell client close cause session closed)
+
+发现如果在impala-shell执行query，或者直接在命令行输入impala-shell -q "xxx" & (或 impala-shell -f file &)
+突然关闭shell客户端，会导致该query后台报‘session closed’而被取消。
+
+如果想不受shell客户端影响。
+可以写个shell脚本，在脚本内写入：
+impala-shell -q "xxx" & (或 impala-shell -f file &)
+这样在命令行启动脚本后突然关闭shell客户端，query运行不会受影响！
+
+#20180511(add host failed)
+CDH host add failed
+
+cannot receive hertbeat
+
+agent log:
+--------
+Failed rack peer update: [Errno 111] Connection refused
+--------
+
+solution
+vim /etc/hosts
+注释掉127.0.0.1 <hostname> #显示了真正的hostname
+
+----------------
+另外一定保证/etc/hosts都配好了。
+
+
+#20180619(cannot start datanode and not role logs)
+#cannot start datanode after added host
+#only Stderr and Stdout log, not role log
+
+#after more investigation, following found
+#lots of Permission denied error in 
+#"/run/cloudera-scm-agent/process/4585-hdfs-DATANODE/logs/stderr.log"
+
+#found a lots of owner error！！！！！！
+
+#don't know why but so many files owned by "oracle oinstall"
+#include /data01, /data01/var/, /data01/var/dfs/, /data01/var/log, /data/var/lib .......
+
+#solution##############################
+chown root:root /data01
+chown root:root /data01/var/
+chown root:root /data01/var/log
+chown root:root /data01/var/lib
+chown root:root /data01/var/run
+
+#remove all files which related CDH under:
+/data01
+/data01/var/
+/data01/var/log
+/data01/var/lib
+/data01/var/run
+
+#remove all roles in that host then reinstall all roles!
+#successed!!!!!!
+
+
+
+
+
+
+
