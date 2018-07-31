@@ -1,0 +1,101 @@
+0625
+系统非centos
+yum, service 不能用！！
+记得每次装机或差错，先用
+lsb_release -a
+查看系统版本！！
+
+suse上安装NTP
+zypper se ntp
+
+$chkconfig ntp on   # 在系统重启时启动服务
+$service ntp start  # 启动ntp
+$service ntp status # 查看ntp状态
+
+20180625(hbase master started but shot down auto)
+hbase master启动成功后又自动关闭
+hbase 日志：
+ERROR: Can't get master address from ZooKeeper; znode data == null
+zookeeper.MetaTableLocator: Failed verification of hbase:meta
+
+环境：HDP 2.6
+原因：由于服务器突然宕机，zookeeper data数据错误，
+
+解决方法：
+关闭hbase（如果此时还没关闭）
+关闭zookeeper
+删除zookeeper data: 
+$cd /hadoop/zookeeper
+$rm -rf version-2/
+
+20180625(cannot start atlas)
+atlas cannot start
+
+error:
+Opening socket connection to server cscloud-rs-hadoop225.huawei.com/172.17.16.235:2181. Will not attempt to authenticate using SASL (unknown error)
+.
+.
+.
+Check '/infra-solr' znode exists or not
+'/infra-solr' znode does not exist
+'/infra-solr' znode does not exist. Solr is responsible to create the ZNode, check Solr started successfully or not
+'/infra-solr' znode does not exist. Solr is responsible to create the ZNode, check Solr started successfully or not
+
+
+solution:
+-------------------------------------------------------------------------------------
+stop atlas
+stop ranger
+
+
+export SOLR_HOST=cscloud-rs-hadoop225.huawei.com
+
+curl -i -v --negotiate -u : "http://$SOLR_HOST:8886/solr/admin/collections?action=DELETE&name=ranger_audits"
+
+stop ambari-infra
+
+curl -i -v --negotiate -u : "http://$SOLR_HOST:8886/solr/admin/collections?action=DELETE&name=vertex_index"
+curl -i -v --negotiate -u : "http://$SOLR_HOST:8886/solr/admin/collections?action=DELETE&name=edge_index"
+curl -i -v --negotiate -u : "http://$SOLR_HOST:8886/solr/admin/collections?action=DELETE&name=fulltext_index"
+
+###############################
+#IMPORTANT: This next command will remove all the configuration of all the collections on zookeeper for infra-solr.
+
+$ zookeeper-client
+> rmr /infra-solr
+###############################
+
+
+start ambari-infra
+start atlas
+
+
+
+20180626(Atlas doesn't show lineage)
+Atlas 不能正常显示数据血缘关系问题
+
+Atlas需要支持比较多
+数据方面，索引数据依靠Solr，元数据依靠建立在hbase上的Titan。这二者都需要zookeeper支持。
+另外数据传输方面需要Kafka的正常运行。
+数据收集方面，hive中需要一小段hook程序以收集元数据和数据血缘信息。
+每当hive建表完成。需要将元数据导入Atlas。即运行 $sh /usr/hdp/2.6.5.0-292/atlas/hook-bin/import-hive.sh
+
+此次问题出现在多个方面，首先是zookeeper运行不正常。该不正常可能由多个原因导致。比如前段时间的集群突然断电导致的数据错误。又或者启动顺序错误。（这里建议使用ambari自带start all）
+（zookeeper甚至导致yarn出了问题，连带着hive也不能用）
+此次zookeeper问题使用了比较暴力的方式。
+首先关闭集群所有组件，删除 /hadoop/zookeeper/version-2这个zookeeper的数据文件。然后让ambari自动重启所有组件。
+然后发现solr连接zookeeper问题。重启solr解决。
+
+但在顺利导入hive元数据后，仍然无法显示表的数据血缘关系。
+atlas 在导入hive元数据后报错：
+graph rollback due to exception AtlasBaseException:Instance hive_table with unique attribute {qualifiedName=lwx543150.test6@HDP1} does not exist (GraphTransactionInterceptor:73)
+在安装了ambari提供的logSearch组件后，发现Kafka大量报错：
+kafka报错：
+Number of alive brokers '1' does not meet the required replication factor '3' for the offsets topic (configured via 'offsets.topic.replication.factor'). This error can be ignored if the cluster is starting up and not all brokers are up yet. (kafka.server.KafkaApis)
+原因是此次的hdp验证集群为单节点，无法做到默认的replication 3。
+解决方法是将kafka 中的配置：offsets.topic.replication.factor=1
+
+重启kafka，重新导入hive元数据入atlas。
+
+成功！！！！！
+
