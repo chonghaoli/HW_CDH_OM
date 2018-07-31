@@ -1,0 +1,301 @@
+在系统中添加hadoop用户
+$useradd hadoop #如果已存在hadoop组，则： useradd –g hadoop hadoop
+$passwd hadoop
+
+为hadoop用户添加root权限
+$vim /etc/sudoers
+添加如下语句
+#lwx543150
+hadoop ALL=(ALL)        ALL
+
+
+配置SSH免密码登录
+如下命令生成公钥，私钥
+ssh-keygen -t rsa
+chmod 600 ~/.ssh/.authorized_keys
+分发公钥到各个节点
+ssh-copy-id -i ~/.ssh/id_rsa.pub <ip>
+
+
+安装JAVA JDK
+
+
+添加JAVA_HOME变量
+vim ~/.bashrc
+最后一行添加：
+export JAVA_HOME=/usr/java/default
+并使之生效
+source ~/.bashrc
+
+
+下载并解压hadoop-2.6.5
+tar –zxvf .....
+放在/tmp/lwx543150/hadoop-2.6.5
+将所有文件owner都改为hadoop
+
+
+安装HADOOP 2.6.5
+修改core.xml
+fs.default.name, fs.defaultFS
+cloudera 安装的hadoop默认端口：8020
+ 
+已安装的默认hadoop tmp目录没找到，
+
+于是配置的时候用了个目前机子里都没建立的tmp目录
+
+修改hadoop目录下/etc/hadoop/core.xml
+添加配置：
+<configuration>
+        <property>
+                <name>fs.defaultFS</name>
+                <value>hdfs://cscloud-citus-mppdb-12:9000</value>
+        </property>
+        <property>
+                <name>hadoop.tmp.dir</name>
+                <value>file:/data04/tmp/hadoop2</value>
+                <description>Abase for other temporary directories.</description>
+        </property>
+        <property>
+                <name>hadoop.log.dir</name>
+                <value>file:/data04/var/log/hadoop-hdfs2</value>
+        </property>
+</configuration>
+
+
+修改hdfs-site.xml
+dfs.namenode.secondary.http-address
+ 
+为避免冲突，更改为使用50092
+
+dfs.namenode.name.dir
+ 
+为避免冲突，使用/data04/dfs2/nn
+
+dfs.datanode.data.dir
+ 
+为避免冲突，使用/data04/dfs2/dn
+
+dfs.datanode.ipc.address
+ 
+换用50022
+
+同样确认dfs.datanode.address， dfs.datanode.http.address不一致
+
+此外，下载cloudera中的hdfs配置后发现hdfs-site.xml中还有如下特定或许冲突设置：
+  <property>
+    <name>dfs.https.address</name>
+    <value>cscloud-citus-mppdb-14.huawei.com:50470</value>
+  </property>
+  <property>
+    <name>dfs.https.port</name>
+    <value>50470</value>
+  </property>
+  <property>
+    <name>dfs.namenode.http-address</name>
+    <value>cscloud-citus-mppdb-14.huawei.com:50070</value>
+  </property>
+  <property>
+    <name>dfs.domain.socket.path</name>
+    <value>/data01/var/run/hdfs-sockets/dn</value>
+  </property>
+
+以上修改后：
+添加：
+<configuration>
+        <property>
+                <name>dfs.namenode.secondary.http-address</name>
+                <value>cscloud-citus-mppdb-12:50092</value>
+        </property>
+        <property>
+                <name>dfs.replication</name>
+                <value>2</value>
+        </property>
+        <property>
+                <name>dfs.namenode.name.dir</name>
+                <value>file:/data04/dfs2/nn</value>
+        </property>
+        <property>
+                <name>dfs.datanode.data.dir</name>
+                <value>file:/data04/dfs2/dn</value>
+        </property>
+        <property>
+                <name>dfs.https.address</name>
+                <value>cscloud-citus-mppdb-12:50472</value>
+        </property>
+        <property>
+                <name>dfs.https.port</name>
+                <value>50472</value>
+        </property>
+        <property>
+                <name>dfs.namenode.http-address</name>
+                <value>cscloud-citus-mppdb-12:50072</value>
+        </property>
+        <property>
+                <name>dfs.domain.socket.path</name>
+                <value>/data04/hadoop2/var/run/hdfs-sockets/dn</value>
+        </property>
+        <property>
+                <name>dfs.datanode.ipc.address</name>
+                <value>0.0.0.0:50022</value>
+        </property>
+        <property>
+                <name>dfs.datanode.address</name>
+                <value>0.0.0.0:50012</value>
+        </property>
+        <property>
+                <name>dfs.datanode.http.address</name>
+                <value>0.0.0.0:50077</value>
+        </property>
+</configuration>
+
+
+以下未试验成功
+  
+修改mapred-site.xml
+在yarn配置中查找
+ 
+为避免冲突，改为使用10022
+
+ 
+为避免冲突，改为使用19882
+
+添加配置：
+<configuration>
+        <property>
+                <name>mapreduce.framework.name</name>
+                <value>yarn</value>
+        </property>
+        <property>
+                <name>mapreduce.jobhistory.address</name>
+                <value>cscloud-citus-mppdb-12:10022</value>
+        </property>
+        <property>
+                <name>mapreduce.jobhistory.webapp.address</name>
+                <value>cscloud-citus-mppdb-12:19882</value>
+        </property>
+        <property>
+                <name>mapreduce.jobhistory.webapp.https.address</name>
+                <value>cscloud-citus-mppdb-12:19892</value>
+        </property>
+        <property>
+                <name>mapreduce.jobhistory.admin.address</name>
+                <value>cscloud-citus-mppdb-12:10035</value>
+        </property>
+        <property>
+                <name>mapreduce.shuffle.port</name>
+                <value>13564</value>
+        </property>
+</configuration>
+
+
+
+修改yarn-site.xml
+ 
+换用 8241 8240
+
+添加如下配置
+<configuration>
+        <property>
+                <name>yarn.resourcemanager.hostname</name>
+                <value>cscloud-citus-mppdb-12</value>
+        </property>
+        <property>
+                <name>yarn.nodemanager.aux-services</name>
+                <value>mapreduce_shuffle</value>
+        </property>
+        <property>
+                <name>yarn.resourcemanager.address</name>
+                <value>cscloud-citus-mppdb-12:28032</value>
+        </property>
+        <property>
+                <name>yarn.resourcemanager.admin.address</name>
+                <value>cscloud-citus-mppdb-12:28033</value>
+        </property>
+        <property>
+                <name>yarn.resourcemanager.scheduler.address</name>
+                <value>cscloud-citus-mppdb-12:28030</value>
+        </property>
+        <property>
+                <name>yarn.resourcemanager.resource-tracker.address</name>
+                <value>cscloud-citus-mppdb-12:28031</value>
+        </property>
+        <property>
+                <name>yarn.resourcemanager.webapp.address</name>
+                <value>cscloud-citus-mppdb-12:28088</value>
+        </property>
+        <property>
+                <name>yarn.resourcemanager.webapp.https.address</name>
+                <value>cscloud-citus-mppdb-12:28090</value>
+        </property>
+        <property>
+                <name>yarn.nodemanager.remote-app-log-dir</name>
+                <value>/data04/tmp/hadoop2-logs</value>
+        </property>
+        <property>
+                <name>yarn.nodemanager.address</name>
+                <value>0.0.0.0:8241</value>
+        </property>
+        <property>
+                <name>yarn.nodemanager.localizer.address</name>
+                <value>0.0.0.0:8240</value>
+        </property>
+        <property>
+                <name>yarn.nodemanager.webapp.address</name>
+                <value>cscloud-citus-mppdb-12:8242</value>
+        </property>
+        <property>
+                <name>yarn.nodemanager.webapp.https.address</name>
+                <value>0.0.0.0:8244</value>
+        </property> 
+</configuration>
+
+
+
+修改hadoop-env.sh
+export HADOOP_PID_DIR=/run/hadoop2
+export HADOOP_SECURE_DN_PID_DIR=/run/hadoop2
+
+
+修改slaves文件
+修改为：
+cscloud-citus-mppdb-14
+cscloud-citus-mppdb-09
+cscloud-citus-mppdb-08
+
+
+添加masters文件
+文件内容：
+cscloud-citus-mppdb-12
+
+
+复制到其他节点
+$scp -r /home/hadoop/hadoop-2.6.5/ hadoop@<ip>:/home/hadoop/hadoop-2.6.5/
+
+在每个node建立文件夹
+sudo mkdir /data04/dfs2
+sudo chown hadoop:hadoop /data04/dfs2
+sudo mkdir -p /data04/tmp/hadoop2
+sudo chown hadoop:hadoop /data04/tmp/
+sudo chown hadoop:hadoop /data04/tmp/hadoop2
+sudo mkdir /data04/hadoop2/
+sudo chown hadoop:hadoop /data04/hadoop2/
+sudo mkdir /run/hadoop2/
+sudo chown hadoop:hadoop /run/hadoop2/
+sudo mkdir -p /data04/var/log/hadoop-hdfs2
+sudo chown hadoop:hadoop /data04/var/log/hadoop-hdfs2
+
+
+运行
+rm -f /data04/tmp/hadoop2-logs/*.*
+rm -f /data04/tmp/hadoop2/*.*
+
+
+启动hdfs
+进入bin文件夹
+./hdfs namenode -format 
+进入sbin文件夹
+./start-all.sh
+
+
+webUI查看
+http://172.17.17.25:50072/dfshealth.html#tab-overview
