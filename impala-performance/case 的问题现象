@@ -1,0 +1,34 @@
+关于本 case 的问题现象:
+
+1) 执行一次复杂查询后, 再次往同一个Coordinator 上提交某个其他查询, 执行性能较之前有明显下降
+
+2) 同样的查询提交到其他 Coordinator 上没有明显问题
+
+3) 出现此问题的 Coordinator 可以观察到较多的连接, 并且从pstack日志中可以看到类似数量的线程都等待在recv()上
+
+4) 重新启动此 Coordinator, 然后再次提交查询, 可以观察到连接数会迅速上升
+
+我这边通过分析日志以及结合 Impala 的运行机制, 目前的结论如下:
+
+1) Impala 执行完查询后, 已建立的连接并不会释放, 以便下次执行查询时可以节省网络连接的时间.  因此连接数上升的现象是正常的. 
+
+2) 查询变慢的 profile 显示, 主要的区别在于 Coordinator 上执行的Fragment Instance的CodeGenTime变长了:
+慢查询:
+ - CodegenTime: 3m27s
+正常查询 :
+ - CodegenTime: 15s696ms
+CodegenTime记录的是Impala Daemon 在执行Fragment Instance 前所用去的即时编译的时间, 也就是说, 是个纯计算的过程, 如果变慢, 意味着 Impala 进程由于某些原因无法获得足够的 CPU 时间片. 由于主机的内存情况良好, 并且没有明显的 IO 问题, 因此目前推断可能与创建了大量的线程, 导致争抢时间片有一定关系. 这个问题可以在后续重现后继续做深入调查.
+
+针对以上问题原因, 我们有以下解决方案:
+
+1) 避免让Coordinator 执行 Fragment Instance, 这样可以获得更稳定的性能, query 执行性能不会因为 Coordinator 的负载较高而下降, 这是解决此问题的最佳方案. Impala 在新版本(5.12以上)中提供了角色分离的机制, 也就是说ImpalaD 可以配置为仅运行Coordinator或仅运行backend, 或者两者都允许. 对于较大的集群, 由于集群规模所带来的开销会增大, 因此我们建议将部分 ImpalaD 配置为仅允许运行Coordinator [1].  
+
+2) 如果升级到5.12尚未列入计划, 那么避免目前的查询性能下降的办法是尽量减少 Coordinator 的连接数以及由此导致的运行线程数量.  当执行复杂查询时, Coordinator 在短时间内由于无法及时响应客户端连接, 导致远程 Daemon 的client cache用尽,因此需要创建新的连接, 这反过来又加大了Coordinator的负载. 因此我们可以延长 Fragment 状态汇报的时间间隔, 对于大负载的集群, 可以一定程度上降低连接数, 也就是预防措施:
+
+Impala 默认以5秒(各个 fragment 取随机值,避免同时发送)间隔向 Coordinator 汇报状态. 我建议您可以试一下设置为30秒:
+
+Cloudera Manager > Impala > Configurations > Advanced > Impala command line argument safety valve:
+
+--status_report_interval=30
+
+3) 关闭 Codegen (set disable_codegen=true) 则是在已经出现此问题后的权宜之计. 您的测试证明, 关闭codegen后查询性能提高明显, 但是还是比正常执行情况要慢. 
