@@ -1,0 +1,30 @@
+1	对Impala平台的调整
+1）load_catalog_in_background=true 启动的时候加载全部元数据，避免每次查询的时候加载；
+2）idle_session_timeout 该参数控制空闲session的超时时间，防止有query在waiting to be closed中停留过久；
+3）idle_query_timeout 控制空闲query的超时时间；
+4）高并发情况下的connection storm，设置以下参数：
+如果是HiveServer2 frontend connection很高，需要确保通过JDBC连接的Java代码及时关闭statement；同时可以通过设置fe_service_threads等参数控制前端连接数。
+如果是backend connection很高，可以通过Impala admission control控制资源池队列最大query数及设置mem_limit等方式控制并发执行的query数量；
+5）accepted_cnxn_queue_depth，可以通过增加该参数值以允许更多的backend connection缓存到队列里（队列的默认大小是10000，Cloudera建议增加到100000，通过调整这个参数，TPC-DS query 14等复杂的sql可以运行起来）
+
+
+2	对应用的调整
+1）将原有的通过impala-shell –f 提交sql任务方式，改为通过HiveJdbc的方式提交SQL，同时将原有的随机选择节点提交的均衡策略改为Haproxy+Keepalived负载均衡策略。
+2）对大表分区优化，如表为speedtest_mbb_raw.t_speedtest；
+3）数据导入之后增加computer status过程；
+4）表在初始化时创建，避免在业务中间创建时报错，在删除之后又创建的过程发生。
+5）避免invalidate metadata，如果需要，可以添加表名，只刷新单张表。
+3	sql提交时的临时参数设置
+1）因为在大集群环境下，执行非常复杂query（如：TPC-DS query 14），会因为大量runtime filter的传递造成网络拥塞并给coordinator极大的压力，所以建议在执行这类query时指定以下query option： 
+set MAX_NUM_RUNTIME_FILTERS=50;
+set RUNTIME_FILTER_WAIT_TIME_MS=10000;
+set RUNTIME_FILTER_MIN_SIZE=4096;
+set RUNTIME_FILTER_MAX_SIZE=33554432;
+set RUNTIME_BLOOM_FILTER_SIZE=2097152;
+
+关于Runtime_fileter，由于网络传输缓慢。。。若runtime filters数据从connection数高的节点中发出，可能拖慢整个query运行速度。故和运行复杂query时相反，可以通过关闭runtime filter以节省时间。关闭命令为：DISABLE_ROW_RUNTIME_FILTERING=false;
+另外出现某些节点connection数量高的情况时，可增加设置命令：set DISABLE_CODEGEN=true; 缩短
+
+这些参数的含义，可参考官方文档：
+https://www.cloudera.com/documentation/enterprise/5-9-x/topics/impala_runtime_filtering.html
+
